@@ -204,7 +204,7 @@ const page = String.raw`<!doctype html>
     .centerbox{width:min(680px,100%);margin:clamp(24px,8vh,90px) auto;background:linear-gradient(145deg,#173a77,#0b2048);padding:clamp(22px,5vw,46px);border-radius:28px;box-shadow:var(--shadow);border:1px solid #ffffff2c;text-align:center}.centerbox h1{font-size:clamp(34px,8vw,68px);margin:0 0 8px;color:var(--gold)}.lead{color:var(--muted);margin-bottom:28px}.field{width:100%;border:2px solid #ffffff25;background:#06142f;color:white;border-radius:15px;padding:16px 18px;outline:none;font-size:20px}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 4px #4de2ff20}textarea.field{min-height:150px;resize:vertical;font-size:clamp(22px,5vw,36px);font-weight:800;margin-top:18px}.btn{border:0;border-radius:14px;padding:14px 20px;color:#071127;background:var(--gold);font-weight:900;cursor:pointer;min-height:52px}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.secondary{background:#ddecff}.btn.cyan{background:var(--cyan)}.btn.ok{background:var(--ok)}.btn.danger{background:var(--danger);color:white}.btn.dark{background:#081730;color:white;border:1px solid #ffffff33}.wide{width:100%;margin-top:14px;font-size:20px}.notice{margin-top:14px;min-height:24px;color:var(--cyan);font-weight:700}.navlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:25px}.navlinks a{color:#cddcff}
     .admin-layout{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:24px;align-items:start}.controls{position:sticky;top:86px}.controls h2{margin-top:0}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.buttonrow .btn{flex:1 1 130px}.admin-card-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.admin-card-actions .btn{padding:9px 7px;min-height:42px}.small{font-size:13px;color:var(--muted)}.count{font-size:24px;font-weight:900;color:var(--cyan)}
     .player-pane{width:min(820px,100%);margin:auto}.submitted{border:2px solid var(--ok);background:#0b4535;border-radius:18px;padding:20px;text-align:center;margin-top:18px}.display main{width:min(1700px,100%)}.display .card{padding:25px}.display .answer{min-height:140px}
-    .draw-wrap{margin-top:18px;background:#fff;border:3px solid #4de2ff;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #4de2ff55}.answer img{display:block;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
+    .draw-wrap{margin-top:18px;background:#fff;border:3px solid #4de2ff;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #4de2ff55}.answer img{display:block;width:100%;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.drawing-image{display:flex;width:100%;min-height:80px;align-items:center;justify-content:center}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
     @media(max-width:860px){.admin-layout{grid-template-columns:1fr}.controls{position:static}.topbar{padding:12px 16px}.admin-card-actions{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
@@ -230,9 +230,34 @@ const page = String.raw`<!doctype html>
     const statusClass = () => quiz.reveal ? "revealed" : quiz.locked ? "locked" : "";
     const hero = () => '<section class="hero"><div class="eyebrow">QUESTION</div><div class="question">'+esc(quiz.question)+'</div><div class="status '+statusClass()+'">'+statusText()+'</div></section>';
     const answerFor = (p, adminView=false) => {
-      if (quiz.reveal || adminView) return p.answer ? '<img src="'+esc(p.answer)+'" alt="'+esc(p.name)+'の手書き解答">' : '<span class="wait">未回答</span>';
+      if (quiz.reveal || adminView) {
+        return p.answer
+          ? '<div class="drawing-image" data-player-id="'+esc(p.id)+'"></div>'
+          : '<span class="wait">未回答</span>';
+      }
       return p.submitted ? '<span style="color:var(--gold)">回答済み</span>' : '<span class="wait">考え中...</span>';
     };
+
+    function renderDrawingImages(){
+      document.querySelectorAll(".drawing-image[data-player-id]").forEach(holder => {
+        const player = quiz.players[holder.dataset.playerId];
+        const source = player?.answer;
+        if (!source || !/^data:image\/(png|jpeg);base64,/.test(source)) {
+          holder.innerHTML = '<span class="wait">画像を読み込めません</span>';
+          return;
+        }
+        const image = new Image();
+        image.alt = player.name + "の手書き解答";
+        image.decoding = "async";
+        image.onload = () => {
+          holder.replaceChildren(image);
+        };
+        image.onerror = () => {
+          holder.innerHTML = '<span class="wait">画像の表示に失敗しました</span>';
+        };
+        image.src = source;
+      });
+    }
     const playerCard = (p, adminView=false) => '<article class="card"><div class="player-head"><div class="player-name"><span class="dot '+(p.online?'online':'')+'"></span>'+esc(p.name)+'</div><div class="score">'+p.score+' 点</div></div><div class="answer '+(p.correct===true?'correct':p.correct===false?'wrong':'')+'">'+answerFor(p,adminView)+'</div>'+(adminView?'<div class="admin-card-actions"><button class="btn ok" data-act="correct" data-id="'+esc(p.id)+'">正解</button><button class="btn danger" data-act="wrong" data-id="'+esc(p.id)+'">不正解</button><button class="btn dark" data-act="minus" data-id="'+esc(p.id)+'">-1点</button><button class="btn dark" data-act="remove" data-id="'+esc(p.id)+'">削除</button></div>':'')+'</article>';
 
     function updateRound(){ document.getElementById("roundLabel").textContent = "ROUND " + quiz.round; }
@@ -343,6 +368,7 @@ const page = String.raw`<!doctype html>
 
     function renderDisplay(){
       app.innerHTML = '<div class="display">'+hero()+'<section class="grid">'+(players().length?players().map(p=>playerCard(p,false)).join(""):'<div class="centerbox"><div class="lead">参加者を待っています。</div></div>')+'</section></div>';
+      renderDrawingImages();
     }
 
     function renderAdmin(){
@@ -355,6 +381,7 @@ const page = String.raw`<!doctype html>
       document.getElementById("resetAnswers").onclick = () => socket.emit("admin:resetAnswers");
       document.getElementById("openDisplay").onclick = () => window.open("/display", "quizDisplay");
       document.getElementById("resetGame").onclick = () => { if(confirm("全員の得点と回答をリセットしますか？")) socket.emit("admin:resetGame"); };
+      renderDrawingImages();
       app.querySelectorAll("[data-act]").forEach(btn => btn.onclick = () => {
         const id=btn.dataset.id, act=btn.dataset.act;
         if(act==="correct") socket.emit("admin:judge",{playerId:id,correct:true});
