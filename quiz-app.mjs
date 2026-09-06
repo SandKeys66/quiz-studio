@@ -312,36 +312,19 @@ const page = String.raw`<!doctype html>
       }
       if (disabled) return;
       let active = false;
-      let activePointerId = null;
-      let penActive = false;
-      let lastPenTime = 0;
       let lastX = 0, lastY = 0;
       const point = e => {
         const r = canvas.getBoundingClientRect();
         return [(e.clientX-r.left)*canvas.width/r.width, (e.clientY-r.top)*canvas.height/r.height];
       };
       canvas.addEventListener("pointerdown", e => {
-        const now = performance.now();
-        if (e.pointerType === "pen") {
-          penActive = true;
-          lastPenTime = now;
-        } else if (e.pointerType === "touch" && (penActive || now - lastPenTime < 700)) {
-          e.preventDefault();
-          return;
-        }
-        if (active && e.pointerId !== activePointerId) {
-          e.preventDefault();
-          return;
-        }
         e.preventDefault();
         active = true;
-        activePointerId = e.pointerId;
         canvas.setPointerCapture(e.pointerId);
         [lastX,lastY]=point(e);
       });
       canvas.addEventListener("pointermove", e => {
-        if(!active || e.pointerId !== activePointerId) return;
-        if (e.pointerType === "pen") lastPenTime = performance.now();
+        if(!active) return;
         e.preventDefault();
         const [x,y]=point(e);
         const pressure = e.pressure > 0 ? e.pressure : 0.5;
@@ -351,13 +334,8 @@ const page = String.raw`<!doctype html>
         lastX=x; lastY=y;
       });
       const finish = e => {
-        if (!active || e.pointerId !== activePointerId) return;
-        if (e.pointerType === "pen") {
-          lastPenTime = performance.now();
-          window.setTimeout(() => { penActive = false; }, 700);
-        }
+        if(!active) return;
         active = false;
-        activePointerId = null;
         draftImage = canvas.toDataURL("image/jpeg",0.82);
       };
       canvas.addEventListener("pointerup", finish);
