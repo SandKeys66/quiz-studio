@@ -71,7 +71,6 @@ io.on("connection", (socket) => {
       name,
       answer: existing?.answer ?? "",
       submitted: existing?.submitted ?? false,
-      score: Number(existing?.score ?? 0),
       correct: existing?.correct ?? null,
       online: true,
       joinedAt: existing?.joinedAt ?? Date.now()
@@ -138,23 +137,13 @@ io.on("connection", (socket) => {
     if (!player) return;
 
     if (correct) {
-      if (player.correct !== true) player.score += 1;
       player.correct = true;
     } else {
-      if (player.correct === true) player.score = Math.max(0, player.score - 1);
       player.correct = false;
     }
     broadcast();
   });
 
-  socket.on("admin:changeScore", (payload = {}) => {
-    const playerId = cleanText(payload.playerId, 80);
-    const delta = Number(payload.delta);
-    const player = state.players[playerId];
-    if (!player || !Number.isFinite(delta)) return;
-    player.score = Math.max(0, player.score + Math.trunc(delta));
-    broadcast();
-  });
 
   socket.on("admin:removePlayer", (payload = {}) => {
     const playerId = cleanText(payload.playerId, 80);
@@ -172,7 +161,6 @@ io.on("connection", (socket) => {
     for (const player of Object.values(state.players)) {
       player.answer = "";
       player.submitted = false;
-      player.score = 0;
       player.correct = null;
     }
     broadcast();
@@ -201,12 +189,12 @@ const page = String.raw`<!doctype html>
     *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#d23a32 0%,var(--bg) 48%,#bd2529 100%);color:var(--white);font-family:Inter,"Hiragino Sans","Yu Gothic",sans-serif}button,input,textarea{font:inherit}button{touch-action:manipulation}.hidden{display:none!important}
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#b82025f2;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}.brand{font-weight:900;letter-spacing:.13em;color:var(--gold);font-size:clamp(18px,3vw,28px)}.round{padding:7px 14px;border:1px solid #ffffff30;border-radius:999px;color:var(--muted)}
     main{width:min(1480px,100%);margin:auto;padding:clamp(16px,3vw,34px)}.hero{background:linear-gradient(135deg,#d43b34,#b91f25);border:3px solid var(--gold);border-radius:24px;padding:clamp(20px,4vw,42px);box-shadow:var(--shadow);text-align:center;margin-bottom:24px}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.18em}.question{font-weight:900;font-size:clamp(26px,5vw,62px);line-height:1.25;margin:12px 0;overflow-wrap:anywhere}.status{color:var(--muted);font-weight:700}.status.locked{color:var(--gold)}.status.revealed{color:var(--ok)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:18px}.card{background:linear-gradient(155deg,var(--panel2),var(--panel));border:1px solid #ffffff25;border-radius:22px;padding:20px;box-shadow:0 10px 30px #0005;min-width:0}.player-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.player-name{font-size:clamp(20px,3vw,30px);font-weight:900;overflow-wrap:anywhere}.score{color:var(--gold);font-size:22px;font-weight:900;white-space:nowrap}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#586a89;margin-right:8px}.dot.online{background:var(--ok);box-shadow:0 0 12px var(--ok)}.answer{margin-top:18px;min-height:96px;border-radius:15px;background:#050e22aa;padding:18px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(22px,4vw,42px);font-weight:900;overflow-wrap:anywhere}.answer.wait{color:var(--muted)}.answer.correct{outline:3px solid var(--ok);background:#0b5239}.answer.wrong{outline:3px solid var(--danger);background:#591d2c}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:18px}.card{background:linear-gradient(155deg,var(--panel2),var(--panel));border:1px solid #ffffff25;border-radius:22px;padding:20px;box-shadow:0 10px 30px #0005;min-width:0}.player-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.player-name{font-size:clamp(20px,3vw,30px);font-weight:900;overflow-wrap:anywhere}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#586a89;margin-right:8px}.dot.online{background:var(--ok);box-shadow:0 0 12px var(--ok)}.answer{margin-top:18px;min-height:96px;border-radius:15px;background:#050e22aa;padding:18px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(22px,4vw,42px);font-weight:900;overflow-wrap:anywhere}.answer.wait{color:var(--muted)}.answer.correct{outline:3px solid var(--ok);background:#0b5239}.answer.wrong{outline:3px solid var(--danger);background:#591d2c}
     .centerbox{width:min(680px,100%);margin:clamp(24px,8vh,90px) auto;background:linear-gradient(145deg,#d43b34,#b91f25);padding:clamp(22px,5vw,46px);border-radius:28px;box-shadow:var(--shadow);border:1px solid #ffffff2c;text-align:center}.centerbox h1{font-size:clamp(34px,8vw,68px);margin:0 0 8px;color:var(--gold)}.lead{color:var(--muted);margin-bottom:28px}.field{width:100%;border:2px solid #ffffff25;background:#a91c22;color:white;border-radius:15px;padding:16px 18px;outline:none;font-size:20px}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 4px #f4d35e44}textarea.field{min-height:150px;resize:vertical;font-size:clamp(22px,5vw,36px);font-weight:800;margin-top:18px}.btn{border:0;border-radius:14px;padding:14px 20px;color:#071127;background:var(--gold);font-weight:900;cursor:pointer;min-height:52px}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.secondary{background:#ddecff}.btn.cyan{background:var(--cyan)}.btn.ok{background:var(--ok)}.btn.danger{background:var(--danger);color:white}.btn.dark{background:#7e1117;color:white;border:1px solid #ffffff33}.wide{width:100%;margin-top:14px;font-size:20px}.notice{margin-top:14px;min-height:24px;color:var(--cyan);font-weight:700}.navlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:25px}.navlinks a{color:#cddcff}
-    .admin-layout{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:24px;align-items:start}.controls{position:sticky;top:86px}.controls h2{margin-top:0}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.buttonrow .btn{flex:1 1 130px}.admin-card-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.admin-card-actions .btn{padding:9px 7px;min-height:42px}.small{font-size:13px;color:var(--muted)}.count{font-size:24px;font-weight:900;color:var(--cyan)}
+    .admin-layout{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:24px;align-items:start}.controls{position:sticky;top:86px}.controls h2{margin-top:0}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.buttonrow .btn{flex:1 1 130px}.admin-card-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.admin-card-actions .btn{padding:9px 7px;min-height:42px}.small{font-size:13px;color:var(--muted)}.count{font-size:24px;font-weight:900;color:var(--cyan)}
     .player-pane{width:min(820px,100%);margin:auto}.submitted{border:2px solid var(--ok);background:#0b4535;border-radius:18px;padding:20px;text-align:center;margin-top:18px}.display main{width:min(1700px,100%)}.display .card{padding:25px}.display .answer{min-height:140px}
     .draw-wrap{margin-top:18px;background:#fff;border:3px solid var(--gold);border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #f4d35e88}.answer img{display:block;width:100%;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.drawing-image{display:flex;width:100%;min-height:80px;align-items:center;justify-content:center}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
-    .display-title{height:64px;display:flex;align-items:center;justify-content:center;gap:22px;color:var(--gold);font-weight:900;text-shadow:4px 4px 0 #111}.display-title span{font-size:clamp(34px,4vw,58px);letter-spacing:.13em}.display-title small{color:var(--gold);font-size:clamp(11px,1.15vw,17px);letter-spacing:.25em;text-shadow:2px 2px 0 #111}.display{position:relative;height:100%;padding:12px;border:4px solid var(--gold);background:#cb302d}.display:before,.display:after{content:"";position:absolute;width:78px;height:78px;pointer-events:none}.display:before{left:5px;top:5px;border-left:8px double var(--gold);border-top:8px double var(--gold);border-radius:18px 0 0 0}.display:after{right:5px;bottom:5px;border-right:8px double var(--gold);border-bottom:8px double var(--gold);border-radius:0 0 18px 0}.display-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));height:calc(100vh - 100px);gap:14px;padding:0 8px 8px}.display-grid .card{display:flex;flex-direction:column;min-height:0;padding:12px;border:4px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,#a91820 0 50px,#fff9e8 50px 100%);box-shadow:5px 6px 0 #1118}.display-grid .card:before{display:none}.display-grid .player-head{min-height:34px;padding:0 4px}.display-grid .player-name{color:var(--gold);font-size:clamp(18px,1.8vw,29px);text-shadow:2px 2px 0 #111}.display-grid .dot{border:1px solid #111}.display-grid .score{color:var(--gold);font-size:clamp(16px,1.4vw,22px);text-shadow:2px 2px 0 #111}.display-grid .answer{flex:1;min-height:0;margin-top:8px;padding:6px;background:#fffdf7;border:3px solid #111;border-radius:6px}.display-grid .drawing-image{width:100%;height:100%}.display-grid .answer img{width:100%;height:100%;max-height:none;object-fit:contain}.display-grid .wait{color:#7a2626;text-shadow:none}.display-page{overflow:hidden;background:#cb302d}.display-page .topbar{display:none}.display-page main{width:100%;max-width:none;height:100vh;padding:0}.brand{color:var(--gold);text-shadow:3px 3px 0 #111}.card{border-color:#f4d35e88;position:relative}.card:before{content:"";position:absolute;left:18px;right:18px;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);border-radius:999px}.btn{box-shadow:0 4px 0 #571014}.btn.cyan{color:#15100a;background:linear-gradient(180deg,#f5df7a,#e9bc3d)}.btn.ok{background:linear-gradient(180deg,#65dc97,#2ba965)}
+    .display{height:100%;padding:14px;background:#cb302d}.display-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));height:calc(100vh - 28px);gap:14px}.display-grid .card{display:flex;flex-direction:column;min-height:0;padding:12px;border:4px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,#a91820 0 50px,#fff9e8 50px 100%);box-shadow:5px 6px 0 #1118}.display-grid .card:before{display:none}.display-grid .player-head{min-height:34px;padding:0 4px;justify-content:center;text-align:center}.display-grid .player-name{width:100%;text-align:center;color:var(--gold);font-size:clamp(18px,1.8vw,29px);text-shadow:2px 2px 0 #111}.display-grid .dot{display:none}.display-grid .answer{flex:1;min-height:0;margin-top:8px;padding:6px;background:#fffdf7;border:3px solid #111;border-radius:6px}.display-grid .drawing-image{width:100%;height:100%}.display-grid .answer img{width:100%;height:100%;max-height:none;object-fit:contain}.display-grid .wait{color:#7a2626;text-shadow:none}.display-page{overflow:hidden;background:#cb302d}.display-page .topbar{display:none}.display-page main{width:100%;max-width:none;height:100vh;padding:0}.brand{color:var(--gold);text-shadow:3px 3px 0 #111}.card{border-color:#f4d35e88;position:relative}.card:before{content:"";position:absolute;left:18px;right:18px;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);border-radius:999px}.btn{box-shadow:0 4px 0 #571014}.btn.cyan{color:#15100a;background:linear-gradient(180deg,#f5df7a,#e9bc3d)}.btn.ok{background:linear-gradient(180deg,#65dc97,#2ba965)}
     @media(max-width:860px){.admin-layout{grid-template-columns:1fr}.controls{position:static}.topbar{padding:12px 16px}.admin-card-actions{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
@@ -227,7 +215,7 @@ const page = String.raw`<!doctype html>
     let strokeHistory = [];
 
     const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-    const players = () => Object.values(quiz.players).sort((a,b) => b.score-a.score || a.joinedAt-b.joinedAt);
+    const players = () => Object.values(quiz.players).sort((a,b) => a.joinedAt-b.joinedAt);
     const statusText = () => quiz.reveal ? "回答公開中" : quiz.locked ? "回答受付終了" : "回答受付中";
     const statusClass = () => quiz.reveal ? "revealed" : quiz.locked ? "locked" : "";
     const hero = () => '<section class="hero"><div class="eyebrow">QUESTION</div><div class="question">'+esc(quiz.question)+'</div><div class="status '+statusClass()+'">'+statusText()+'</div></section>';
@@ -257,13 +245,13 @@ const page = String.raw`<!doctype html>
         image.src = source;
       });
     }
-    const playerCard = (p, adminView=false) => '<article class="card"><div class="player-head"><div class="player-name"><span class="dot '+(p.online?'online':'')+'"></span>'+esc(p.name)+'</div><div class="score">'+p.score+' 点</div></div><div class="answer '+(p.correct===true?'correct':p.correct===false?'wrong':'')+'">'+answerFor(p,adminView)+'</div>'+(adminView?'<div class="admin-card-actions"><button class="btn ok" data-act="correct" data-id="'+esc(p.id)+'">正解</button><button class="btn danger" data-act="wrong" data-id="'+esc(p.id)+'">不正解</button><button class="btn dark" data-act="minus" data-id="'+esc(p.id)+'">-1点</button><button class="btn dark" data-act="remove" data-id="'+esc(p.id)+'">削除</button></div>':'')+'</article>';
+    const playerCard = (p, adminView=false) => '<article class="card"><div class="player-head"><div class="player-name"><span class="dot '+(p.online?'online':'')+'"></span>'+esc(p.name)+'</div></div><div class="answer '+(p.correct===true?'correct':p.correct===false?'wrong':'')+'">'+answerFor(p,adminView)+'</div>'+(adminView?'<div class="admin-card-actions"><button class="btn ok" data-act="correct" data-id="'+esc(p.id)+'">正解</button><button class="btn danger" data-act="wrong" data-id="'+esc(p.id)+'">不正解</button><button class="btn dark" data-act="remove" data-id="'+esc(p.id)+'">削除</button></div>':'')+'</article>';
 
     function updateRound(){ document.getElementById("roundLabel").textContent = "ROUND " + quiz.round; }
 
     function renderPlayer(){
       if (!joined) {
-        app.innerHTML = '<section class="centerbox"><h1>QUIZ</h1><div class="lead">名前を入力してクイズに参加してください。</div><input id="name" class="field" maxlength="24" autocomplete="name" placeholder="出場者名" value="'+esc(currentPlayerName)+'"><button id="join" class="btn wide">参加する</button><div id="notice" class="notice"></div><div class="navlinks"><a href="/display">全画面表示</a><a href="/admin">司会画面</a></div></section>';
+        app.innerHTML = '<section class="centerbox"><h1>QUIZ</h1><div class="lead">名前を入力してクイズに参加してください。</div><input id="name" class="field" maxlength="24" autocomplete="name" placeholder="出場者名" value="'+esc(currentPlayerName)+'"><button id="join" class="btn wide">参加する</button><div id="notice" class="notice"></div></section>';
         document.getElementById("join").onclick = joinPlayer;
         document.getElementById("name").onkeydown = e => { if(e.key === "Enter") joinPlayer(); };
         return;
@@ -272,7 +260,7 @@ const page = String.raw`<!doctype html>
       if (!me) { joined=false; return renderPlayer(); }
       const disabled = quiz.locked;
       if (!draftImage && me.answer) draftImage = me.answer;
-      app.innerHTML = '<div class="player-pane">'+hero()+'<section class="card"><div class="player-head"><div class="player-name">'+esc(me.name)+'</div><div class="score">'+me.score+' 点</div></div><div class="handwriting-label">Apple Pencilまたは指で白い欄に解答を書いてください。</div><div class="draw-wrap"><canvas id="drawCanvas" class="draw-canvas" aria-label="手書き解答欄"></canvas></div><div class="draw-tools"><button id="penTool" class="btn dark '+(drawingTool==='pen'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>ペン</button><button id="eraserTool" class="btn dark '+(drawingTool==='eraser'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>消しゴム</button><button id="clearCanvas" class="btn danger" '+(disabled?'disabled':'')+'>全消去</button></div><button id="submit" class="btn wide cyan" '+(disabled?'disabled':'')+'>'+(me.submitted?'解答を更新する':'解答を送信する')+'</button><div id="notice" class="notice">'+(disabled?'現在、解答はロックされています。':me.submitted?'解答を送信済みです。表示画面へ反映されています。':'')+'</div></section></div>';
+      app.innerHTML = '<div class="player-pane">'+hero()+'<section class="card"><div class="player-head"><div class="player-name">'+esc(me.name)+'</div></div><div class="handwriting-label">Apple Pencilまたは指で白い欄に解答を書いてください。</div><div class="draw-wrap"><canvas id="drawCanvas" class="draw-canvas" aria-label="手書き解答欄"></canvas></div><div class="draw-tools"><button id="penTool" class="btn dark '+(drawingTool==='pen'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>ペン</button><button id="eraserTool" class="btn dark '+(drawingTool==='eraser'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>消しゴム</button><button id="clearCanvas" class="btn danger" '+(disabled?'disabled':'')+'>全消去</button></div><button id="submit" class="btn wide cyan" '+(disabled?'disabled':'')+'>'+(me.submitted?'解答を更新する':'解答を送信する')+'</button><div id="notice" class="notice">'+(disabled?'現在、解答はロックされています。':me.submitted?'解答を送信済みです。表示画面へ反映されています。':'')+'</div></section></div>';
       setupDrawingCanvas(disabled);
       if (!disabled) {
         document.getElementById("submit").onclick = submitAnswer;
@@ -368,7 +356,7 @@ const page = String.raw`<!doctype html>
     function renderDisplay(){
       document.body.classList.add("display-page");
       const visiblePlayers = players().slice(0, 6);
-      app.innerHTML = '<div class="display"><header class="display-title"><span>工大王</span><small>ANSWER BOARD</small></header><section class="display-grid">'+(visiblePlayers.length?visiblePlayers.map(p=>playerCard(p,false)).join(""):'<div class="centerbox"><div class="lead">参加者を待っています。</div></div>')+'</section></div>';
+      app.innerHTML = '<div class="display"><section class="display-grid">'+(visiblePlayers.length?visiblePlayers.map(p=>playerCard(p,false)).join(""):'<div class="centerbox"><div class="lead">参加者を待っています。</div></div>')+'</section></div>';
       renderDrawingImages();
     }
 
@@ -385,7 +373,6 @@ const page = String.raw`<!doctype html>
         const id=btn.dataset.id, act=btn.dataset.act;
         if(act==="correct") socket.emit("admin:judge",{playerId:id,correct:true});
         if(act==="wrong") socket.emit("admin:judge",{playerId:id,correct:false});
-        if(act==="minus") socket.emit("admin:changeScore",{playerId:id,delta:-1});
         if(act==="remove" && confirm("この参加者を削除しますか？")) socket.emit("admin:removePlayer",{playerId:id});
       });
     }
