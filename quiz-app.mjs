@@ -193,7 +193,8 @@ const page = String.raw`<!doctype html>
     .centerbox{width:min(680px,100%);margin:clamp(24px,8vh,90px) auto;background:linear-gradient(145deg,#d43b34,#b91f25);padding:clamp(22px,5vw,46px);border-radius:28px;box-shadow:var(--shadow);border:1px solid #ffffff2c;text-align:center}.centerbox h1{font-size:clamp(34px,8vw,68px);margin:0 0 8px;color:var(--gold)}.lead{color:var(--muted);margin-bottom:28px}.field{width:100%;border:2px solid #ffffff25;background:#a91c22;color:white;border-radius:15px;padding:16px 18px;outline:none;font-size:20px}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 4px #f4d35e44}textarea.field{min-height:150px;resize:vertical;font-size:clamp(22px,5vw,36px);font-weight:800;margin-top:18px}.btn{border:0;border-radius:14px;padding:14px 20px;color:#071127;background:var(--gold);font-weight:900;cursor:pointer;min-height:52px}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.secondary{background:#ddecff}.btn.cyan{background:var(--cyan)}.btn.ok{background:var(--ok)}.btn.danger{background:var(--danger);color:white}.btn.dark{background:#7e1117;color:white;border:1px solid #ffffff33}.wide{width:100%;margin-top:14px;font-size:20px}.notice{margin-top:14px;min-height:24px;color:var(--cyan);font-weight:700}.navlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:25px}.navlinks a{color:#cddcff}
     .admin-layout{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:24px;align-items:start}.controls{position:sticky;top:86px}.controls h2{margin-top:0}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.buttonrow .btn{flex:1 1 130px}.admin-card-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.admin-card-actions .btn{padding:9px 7px;min-height:42px}.small{font-size:13px;color:var(--muted)}.count{font-size:24px;font-weight:900;color:var(--cyan)}
     .player-pane{width:min(820px,100%);margin:auto}.submitted{border:2px solid var(--ok);background:#0b4535;border-radius:18px;padding:20px;text-align:center;margin-top:18px}.display main{width:min(1700px,100%)}.display .card{padding:25px}.display .answer{min-height:140px}
-    .draw-wrap{margin-top:18px;background:#fff;border:3px solid var(--gold);border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #f4d35e88}.answer img{display:block;width:100%;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.drawing-image{display:flex;width:100%;min-height:80px;align-items:center;justify-content:center}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
+    .draw-wrap{margin-top:18px;background:#fff;border:3px solid var(--gold);border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(260px,48vh,520px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #f4d35e88}.answer img{display:block;width:100%;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.drawing-image{display:flex;width:100%;min-height:80px;align-items:center;justify-content:center}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
+    .player-page{height:100%;min-height:100%;overflow:hidden;background:#cb302d}.player-page .topbar{height:52px;padding:8px 16px;position:relative}.player-page main{height:calc(100vh - 52px);height:calc(100dvh - 52px);min-height:0;padding:8px 12px;overflow:hidden}.player-page .player-pane{height:100%;width:min(900px,100%);display:flex;flex-direction:column}.player-page .hero{flex:0 0 auto;margin-bottom:7px;padding:7px 14px;border-radius:14px}.player-page .eyebrow{display:none}.player-page .question{margin:0;font-size:clamp(18px,3.2vmin,30px);line-height:1.15}.player-page .status{font-size:12px;margin-top:3px}.player-page .player-pane>.card{flex:1;min-height:0;display:flex;flex-direction:column;padding:9px 12px;border-radius:14px}.player-page .player-head{flex:0 0 auto;min-height:26px}.player-page .player-name{font-size:clamp(17px,2.8vmin,24px)}.player-page .handwriting-label{flex:0 0 auto;margin-top:3px;font-size:11px}.player-page .draw-wrap{flex:1;min-height:110px;margin-top:5px;border-width:3px;border-radius:12px}.player-page .draw-canvas{width:100%;height:100%;min-height:110px}.player-page .draw-tools{flex:0 0 auto;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}.player-page .btn{min-height:38px;padding:7px 10px;border-radius:10px}.player-page .wide{flex:0 0 auto;margin-top:6px;min-height:42px;font-size:16px}.player-page .notice{flex:0 0 auto;min-height:17px;margin-top:3px;font-size:12px;line-height:1.2}.player-page .card:before{display:none}@media(max-width:600px){.player-page .topbar{height:44px;padding:6px 12px}.player-page .brand{font-size:16px}.player-page .round{padding:4px 9px;font-size:12px}.player-page main{height:calc(100vh - 44px);height:calc(100dvh - 44px);padding:5px 7px}.player-page .hero{padding:5px 9px;margin-bottom:5px}.player-page .question{font-size:clamp(16px,4.3vw,23px)}.player-page .player-pane>.card{padding:6px 8px}.player-page .handwriting-label{display:none}.player-page .draw-wrap{margin-top:4px}.player-page .btn{min-height:34px;padding:5px 7px;font-size:13px}.player-page .wide{min-height:38px;font-size:15px}.player-page .notice{font-size:10px}}@media(max-height:600px) and (orientation:landscape){.player-page .topbar{height:38px;padding:4px 12px}.player-page .brand{font-size:14px}.player-page .round{padding:3px 8px;font-size:11px}.player-page main{height:calc(100vh - 38px);height:calc(100dvh - 38px);padding:4px 8px}.player-page .hero{padding:3px 10px;margin-bottom:4px}.player-page .question{font-size:16px}.player-page .status{display:none}.player-page .player-head{min-height:20px}.player-page .player-name{font-size:15px}.player-page .handwriting-label{display:none}.player-page .player-pane>.card{padding:5px 8px}.player-page .draw-wrap{margin-top:3px;min-height:80px}.player-page .draw-canvas{min-height:80px}.player-page .draw-tools{margin-top:4px;gap:5px}.player-page .btn{min-height:30px;padding:3px 7px;font-size:12px}.player-page .wide{min-height:32px;margin-top:4px;font-size:13px}.player-page .notice{min-height:12px;margin-top:2px;font-size:9px}}
     .display{height:100%;padding:14px;background:#cb302d}.display-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));height:calc(100vh - 28px);gap:14px}.display-grid .card{display:flex;flex-direction:column;min-height:0;padding:12px;border:4px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,#a91820 0 50px,#fff9e8 50px 100%);box-shadow:5px 6px 0 #1118}.display-grid .card:before{display:none}.display-grid .player-head{min-height:34px;padding:0 4px;justify-content:center;text-align:center}.display-grid .player-name{width:100%;text-align:center;color:var(--gold);font-size:clamp(18px,1.8vw,29px);text-shadow:2px 2px 0 #111}.display-grid .dot{display:none}.display-grid .answer{flex:1;min-height:0;margin-top:8px;padding:6px;background:#fffdf7;border:3px solid #111;border-radius:6px}.display-grid .drawing-image{width:100%;height:100%}.display-grid .answer img{width:100%;height:100%;max-height:none;object-fit:contain}.display-grid .wait{color:#7a2626;text-shadow:none}.display-page{overflow:hidden;background:#cb302d}.display-page .topbar{display:none}.display-page main{width:100%;max-width:none;height:100vh;padding:0}.brand{color:var(--gold);text-shadow:3px 3px 0 #111}.card{border-color:#f4d35e88;position:relative}.card:before{content:"";position:absolute;left:18px;right:18px;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);border-radius:999px}.btn{box-shadow:0 4px 0 #571014}.btn.cyan{color:#15100a;background:linear-gradient(180deg,#f5df7a,#e9bc3d)}.btn.ok{background:linear-gradient(180deg,#65dc97,#2ba965)}
     @media(max-width:860px){.admin-layout{grid-template-columns:1fr}.controls{position:static}.topbar{padding:12px 16px}.admin-card-actions{grid-template-columns:repeat(2,1fr)}}
   </style>
@@ -206,6 +207,8 @@ const page = String.raw`<!doctype html>
     const socket = io();
     const app = document.getElementById("app");
     const route = location.pathname.replace(/\/+$/, "") || "/";
+    if (route === "/") document.body.classList.add("player-page");
+    if (route === "/admin") document.body.classList.add("admin-page");
     let quiz = { question:"", reveal:false, locked:false, round:1, players:{} };
     let joined = false;
     let currentPlayerId = localStorage.getItem("quizPlayerId") || "";
@@ -309,17 +312,37 @@ const page = String.raw`<!doctype html>
       }
       if (disabled) return;
       let active = false;
+      let activePointerId = null;
+      let penActive = false;
+      let lastPenTime = 0;
       let lastX = 0, lastY = 0;
       const point = e => {
         const r = canvas.getBoundingClientRect();
         return [(e.clientX-r.left)*canvas.width/r.width, (e.clientY-r.top)*canvas.height/r.height];
       };
       canvas.addEventListener("pointerdown", e => {
-        e.preventDefault(); active=true; canvas.setPointerCapture(e.pointerId);
+        const now = performance.now();
+        if (e.pointerType === "pen") {
+          penActive = true;
+          lastPenTime = now;
+        } else if (e.pointerType === "touch" && (penActive || now - lastPenTime < 700)) {
+          e.preventDefault();
+          return;
+        }
+        if (active && e.pointerId !== activePointerId) {
+          e.preventDefault();
+          return;
+        }
+        e.preventDefault();
+        active = true;
+        activePointerId = e.pointerId;
+        canvas.setPointerCapture(e.pointerId);
         [lastX,lastY]=point(e);
       });
       canvas.addEventListener("pointermove", e => {
-        if(!active) return; e.preventDefault();
+        if(!active || e.pointerId !== activePointerId) return;
+        if (e.pointerType === "pen") lastPenTime = performance.now();
+        e.preventDefault();
         const [x,y]=point(e);
         const pressure = e.pressure > 0 ? e.pressure : 0.5;
         ctx.strokeStyle = drawingTool === "eraser" ? "white" : "#18100d";
@@ -327,7 +350,16 @@ const page = String.raw`<!doctype html>
         ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke();
         lastX=x; lastY=y;
       });
-      const finish = e => { if(active){ active=false; draftImage=canvas.toDataURL("image/jpeg",0.82); } };
+      const finish = e => {
+        if (!active || e.pointerId !== activePointerId) return;
+        if (e.pointerType === "pen") {
+          lastPenTime = performance.now();
+          window.setTimeout(() => { penActive = false; }, 700);
+        }
+        active = false;
+        activePointerId = null;
+        draftImage = canvas.toDataURL("image/jpeg",0.82);
+      };
       canvas.addEventListener("pointerup", finish);
       canvas.addEventListener("pointercancel", finish);
     }
