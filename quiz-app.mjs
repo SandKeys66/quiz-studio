@@ -183,7 +183,7 @@ const page = String.raw`<!doctype html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#07152f" />
-  <title>Quiz Studio</title>
+  <title>工大王2026</title>
   <style>
     :root{--bg:#c92f2c;--panel:#b92428;--panel2:#d13a33;--gold:#f4d35e;--cyan:#f4d35e;--white:#fffdf7;--muted:#f6e8bf;--danger:#8d1219;--ok:#3ca66b;--shadow:0 14px 34px #4a080866}
     *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#d23a32 0%,var(--bg) 48%,#bd2529 100%);color:var(--white);font-family:Inter,"Hiragino Sans","Yu Gothic",sans-serif}button,input,textarea{font:inherit}button{touch-action:manipulation}.hidden{display:none!important}
@@ -200,7 +200,7 @@ const page = String.raw`<!doctype html>
   </style>
 </head>
 <body>
-  <header class="topbar"><div class="brand">QUIZ STUDIO</div><div class="round" id="roundLabel">ROUND 1</div></header>
+  <header class="topbar"><div class="brand">工大王2026</div><div class="round" id="roundLabel">ROUND 1</div></header>
   <main id="app"></main>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -264,7 +264,7 @@ const page = String.raw`<!doctype html>
 
     function renderPlayer(){
       if (!joined) {
-        app.innerHTML = '<section class="centerbox"><h1>QUIZ</h1><div class="lead">名前を入力してクイズに参加してください。</div><input id="name" class="field" maxlength="24" autocomplete="name" placeholder="出場者名" value="'+esc(currentPlayerName)+'"><button id="join" class="btn wide">参加する</button><div id="notice" class="notice"></div></section>';
+        app.innerHTML = '<section class="centerbox"><h1>工大王2026</h1><div class="lead">名前を入力して参加してください。</div><input id="name" class="field" maxlength="24" autocomplete="name" placeholder="出場者名" value="'+esc(currentPlayerName)+'"><button id="join" class="btn wide">参加する</button><div id="notice" class="notice"></div></section>';
         document.getElementById("join").onclick = joinPlayer;
         document.getElementById("name").onkeydown = e => { if(e.key === "Enter") joinPlayer(); };
         return;
