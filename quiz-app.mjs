@@ -1,3 +1,4 @@
+
 import express from "express";
 import http from "http";
 import os from "os";
@@ -86,7 +87,7 @@ io.on("connection", (socket) => {
     const playerId = socketToPlayer.get(socket.id);
     const player = state.players[playerId];
     if (!player) return reply({ ok: false, message: "参加し直してください。" });
-    if (state.locked || state.reveal) return reply({ ok: false, message: "現在は回答を変更できません。" });
+    if (state.locked) return reply({ ok: false, message: "現在は回答を変更できません。" });
 
     const answer = String(payload.answer ?? "");
     const isDrawing = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(answer);
@@ -110,7 +111,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("admin:toggleLock", () => {
-    if (!state.reveal) state.locked = !state.locked;
+    state.locked = !state.locked;
     broadcast();
   });
 
@@ -196,15 +197,16 @@ const page = String.raw`<!doctype html>
   <meta name="theme-color" content="#07152f" />
   <title>Quiz Studio</title>
   <style>
-    :root{--bg:#061127;--panel:#102958;--panel2:#17376e;--gold:#ffd54a;--cyan:#4de2ff;--white:#f8fbff;--muted:#aabbd9;--danger:#ff6577;--ok:#45df96;--shadow:0 16px 50px #0007}
-    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -20%,#214d96 0,#081a3a 38%,var(--bg) 72%);color:var(--white);font-family:Inter,"Hiragino Sans","Yu Gothic",sans-serif}button,input,textarea{font:inherit}button{touch-action:manipulation}.hidden{display:none!important}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#030b1dcc;border-bottom:1px solid #ffffff20;position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}.brand{font-weight:900;letter-spacing:.13em;color:var(--gold);font-size:clamp(18px,3vw,28px)}.round{padding:7px 14px;border:1px solid #ffffff30;border-radius:999px;color:var(--muted)}
-    main{width:min(1480px,100%);margin:auto;padding:clamp(16px,3vw,34px)}.hero{background:linear-gradient(135deg,#173f85,#0a2048);border:2px solid #5bd8ff55;border-radius:24px;padding:clamp(20px,4vw,42px);box-shadow:var(--shadow);text-align:center;margin-bottom:24px}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.18em}.question{font-weight:900;font-size:clamp(26px,5vw,62px);line-height:1.25;margin:12px 0;overflow-wrap:anywhere}.status{color:var(--muted);font-weight:700}.status.locked{color:var(--gold)}.status.revealed{color:var(--ok)}
+    :root{--bg:#100608;--panel:#251113;--panel2:#3b171b;--gold:#d8a13a;--cyan:#d51d2f;--white:#fffaf0;--muted:#c9b9ac;--danger:#d51d2f;--ok:#42c77a;--shadow:0 16px 50px #0009}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -20%,#8c111d 0,#3a0a0f 34%,var(--bg) 72%);color:var(--white);font-family:Inter,"Hiragino Sans","Yu Gothic",sans-serif}button,input,textarea{font:inherit}button{touch-action:manipulation}.hidden{display:none!important}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#150608e8;border-bottom:2px solid #d8a13a66;position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}.brand{font-weight:900;letter-spacing:.13em;color:var(--gold);font-size:clamp(18px,3vw,28px)}.round{padding:7px 14px;border:1px solid #ffffff30;border-radius:999px;color:var(--muted)}
+    main{width:min(1480px,100%);margin:auto;padding:clamp(16px,3vw,34px)}.hero{background:linear-gradient(135deg,#73101a,#29080c);border:2px solid #d8a13a88;border-radius:24px;padding:clamp(20px,4vw,42px);box-shadow:var(--shadow);text-align:center;margin-bottom:24px}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.18em}.question{font-weight:900;font-size:clamp(26px,5vw,62px);line-height:1.25;margin:12px 0;overflow-wrap:anywhere}.status{color:var(--muted);font-weight:700}.status.locked{color:var(--gold)}.status.revealed{color:var(--ok)}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:18px}.card{background:linear-gradient(155deg,var(--panel2),var(--panel));border:1px solid #ffffff25;border-radius:22px;padding:20px;box-shadow:0 10px 30px #0005;min-width:0}.player-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.player-name{font-size:clamp(20px,3vw,30px);font-weight:900;overflow-wrap:anywhere}.score{color:var(--gold);font-size:22px;font-weight:900;white-space:nowrap}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#586a89;margin-right:8px}.dot.online{background:var(--ok);box-shadow:0 0 12px var(--ok)}.answer{margin-top:18px;min-height:96px;border-radius:15px;background:#050e22aa;padding:18px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(22px,4vw,42px);font-weight:900;overflow-wrap:anywhere}.answer.wait{color:var(--muted)}.answer.correct{outline:3px solid var(--ok);background:#0b5239}.answer.wrong{outline:3px solid var(--danger);background:#591d2c}
-    .centerbox{width:min(680px,100%);margin:clamp(24px,8vh,90px) auto;background:linear-gradient(145deg,#173a77,#0b2048);padding:clamp(22px,5vw,46px);border-radius:28px;box-shadow:var(--shadow);border:1px solid #ffffff2c;text-align:center}.centerbox h1{font-size:clamp(34px,8vw,68px);margin:0 0 8px;color:var(--gold)}.lead{color:var(--muted);margin-bottom:28px}.field{width:100%;border:2px solid #ffffff25;background:#06142f;color:white;border-radius:15px;padding:16px 18px;outline:none;font-size:20px}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 4px #4de2ff20}textarea.field{min-height:150px;resize:vertical;font-size:clamp(22px,5vw,36px);font-weight:800;margin-top:18px}.btn{border:0;border-radius:14px;padding:14px 20px;color:#071127;background:var(--gold);font-weight:900;cursor:pointer;min-height:52px}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.secondary{background:#ddecff}.btn.cyan{background:var(--cyan)}.btn.ok{background:var(--ok)}.btn.danger{background:var(--danger);color:white}.btn.dark{background:#081730;color:white;border:1px solid #ffffff33}.wide{width:100%;margin-top:14px;font-size:20px}.notice{margin-top:14px;min-height:24px;color:var(--cyan);font-weight:700}.navlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:25px}.navlinks a{color:#cddcff}
+    .centerbox{width:min(680px,100%);margin:clamp(24px,8vh,90px) auto;background:linear-gradient(145deg,#68101a,#25090d);padding:clamp(22px,5vw,46px);border-radius:28px;box-shadow:var(--shadow);border:1px solid #ffffff2c;text-align:center}.centerbox h1{font-size:clamp(34px,8vw,68px);margin:0 0 8px;color:var(--gold)}.lead{color:var(--muted);margin-bottom:28px}.field{width:100%;border:2px solid #ffffff25;background:#1a090c;color:white;border-radius:15px;padding:16px 18px;outline:none;font-size:20px}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 4px #d51d2f33}textarea.field{min-height:150px;resize:vertical;font-size:clamp(22px,5vw,36px);font-weight:800;margin-top:18px}.btn{border:0;border-radius:14px;padding:14px 20px;color:#071127;background:var(--gold);font-weight:900;cursor:pointer;min-height:52px}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.secondary{background:#ddecff}.btn.cyan{background:var(--cyan)}.btn.ok{background:var(--ok)}.btn.danger{background:var(--danger);color:white}.btn.dark{background:#211012;color:white;border:1px solid #ffffff33}.wide{width:100%;margin-top:14px;font-size:20px}.notice{margin-top:14px;min-height:24px;color:var(--cyan);font-weight:700}.navlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:25px}.navlinks a{color:#cddcff}
     .admin-layout{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:24px;align-items:start}.controls{position:sticky;top:86px}.controls h2{margin-top:0}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.buttonrow .btn{flex:1 1 130px}.admin-card-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.admin-card-actions .btn{padding:9px 7px;min-height:42px}.small{font-size:13px;color:var(--muted)}.count{font-size:24px;font-weight:900;color:var(--cyan)}
     .player-pane{width:min(820px,100%);margin:auto}.submitted{border:2px solid var(--ok);background:#0b4535;border-radius:18px;padding:20px;text-align:center;margin-top:18px}.display main{width:min(1700px,100%)}.display .card{padding:25px}.display .answer{min-height:140px}
-    .draw-wrap{margin-top:18px;background:#fff;border:3px solid #4de2ff;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #4de2ff55}.answer img{display:block;width:100%;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.drawing-image{display:flex;width:100%;min-height:80px;align-items:center;justify-content:center}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
+    .draw-wrap{margin-top:18px;background:#fff;border:3px solid #d8a13a;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #d8a13a88}.answer img{display:block;width:100%;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.drawing-image{display:flex;width:100%;min-height:80px;align-items:center;justify-content:center}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
+    .display-title{height:70px;display:flex;align-items:center;justify-content:center;gap:20px;color:var(--gold);font-weight:900;text-shadow:0 3px 0 #000,0 0 20px #d51d2f99}.display-title span{font-size:clamp(34px,4vw,58px);letter-spacing:.13em}.display-title small{color:var(--white);font-size:clamp(11px,1.2vw,17px);letter-spacing:.25em}.display-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));height:calc(100vh - 92px);gap:14px}.display-grid .card{display:flex;flex-direction:column;min-height:0;padding:14px;border:2px solid #d8a13a99;border-radius:18px}.display-grid .player-head{min-height:38px}.display-grid .player-name{font-size:clamp(18px,2vw,30px)}.display-grid .score{font-size:clamp(16px,1.5vw,23px)}.display-grid .answer{flex:1;min-height:0;margin-top:8px;padding:8px;background:#fffaf0;border-radius:12px}.display-grid .drawing-image{width:100%;height:100%}.display-grid .answer img{width:100%;height:100%;max-height:none;object-fit:contain}.display-page{overflow:hidden}.display-page .topbar{display:none}.display-page main{width:100%;max-width:none;height:100vh;padding:8px 14px}.brand{color:var(--gold);text-shadow:0 2px 0 #000,0 0 16px #d51d2f88}.card{border-color:#d8a13a44}.btn{box-shadow:0 4px 0 #5b190f}.btn.cyan{color:#fff;background:linear-gradient(180deg,#ed263a,#b80f20)}.btn.ok{background:linear-gradient(180deg,#65dc97,#2ba965)}
     @media(max-width:860px){.admin-layout{grid-template-columns:1fr}.controls{position:static}.topbar{padding:12px 16px}.admin-card-actions{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
@@ -230,12 +232,9 @@ const page = String.raw`<!doctype html>
     const statusClass = () => quiz.reveal ? "revealed" : quiz.locked ? "locked" : "";
     const hero = () => '<section class="hero"><div class="eyebrow">QUESTION</div><div class="question">'+esc(quiz.question)+'</div><div class="status '+statusClass()+'">'+statusText()+'</div></section>';
     const answerFor = (p, adminView=false) => {
-      if (quiz.reveal || adminView) {
-        return p.answer
-          ? '<div class="drawing-image" data-player-id="'+esc(p.id)+'"></div>'
-          : '<span class="wait">未回答</span>';
-      }
-      return p.submitted ? '<span style="color:var(--gold)">回答済み</span>' : '<span class="wait">考え中...</span>';
+      return p.answer
+        ? '<div class="drawing-image" data-player-id="'+esc(p.id)+'"></div>'
+        : '<span class="wait">未回答</span>';
     };
 
     function renderDrawingImages(){
@@ -271,9 +270,9 @@ const page = String.raw`<!doctype html>
       }
       const me = quiz.players[currentPlayerId];
       if (!me) { joined=false; return renderPlayer(); }
-      const disabled = quiz.locked || quiz.reveal;
+      const disabled = quiz.locked;
       if (!draftImage && me.answer) draftImage = me.answer;
-      app.innerHTML = '<div class="player-pane">'+hero()+'<section class="card"><div class="player-head"><div class="player-name">'+esc(me.name)+'</div><div class="score">'+me.score+' 点</div></div><div class="handwriting-label">Apple Pencilまたは指で白い欄に解答を書いてください。</div><div class="draw-wrap"><canvas id="drawCanvas" class="draw-canvas" aria-label="手書き解答欄"></canvas></div><div class="draw-tools"><button id="penTool" class="btn dark '+(drawingTool==='pen'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>ペン</button><button id="eraserTool" class="btn dark '+(drawingTool==='eraser'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>消しゴム</button><button id="clearCanvas" class="btn danger" '+(disabled?'disabled':'')+'>全消去</button></div><button id="submit" class="btn wide cyan" '+(disabled?'disabled':'')+'>'+(me.submitted?'解答を更新する':'解答を送信する')+'</button><div id="notice" class="notice">'+(disabled?'現在、解答はロックされています。':me.submitted?'解答を送信済みです。公開までお待ちください。':'')+'</div></section></div>';
+      app.innerHTML = '<div class="player-pane">'+hero()+'<section class="card"><div class="player-head"><div class="player-name">'+esc(me.name)+'</div><div class="score">'+me.score+' 点</div></div><div class="handwriting-label">Apple Pencilまたは指で白い欄に解答を書いてください。</div><div class="draw-wrap"><canvas id="drawCanvas" class="draw-canvas" aria-label="手書き解答欄"></canvas></div><div class="draw-tools"><button id="penTool" class="btn dark '+(drawingTool==='pen'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>ペン</button><button id="eraserTool" class="btn dark '+(drawingTool==='eraser'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>消しゴム</button><button id="clearCanvas" class="btn danger" '+(disabled?'disabled':'')+'>全消去</button></div><button id="submit" class="btn wide cyan" '+(disabled?'disabled':'')+'>'+(me.submitted?'解答を更新する':'解答を送信する')+'</button><div id="notice" class="notice">'+(disabled?'現在、解答はロックされています。':me.submitted?'解答を送信済みです。表示画面へ反映されています。':'')+'</div></section></div>';
       setupDrawingCanvas(disabled);
       if (!disabled) {
         document.getElementById("submit").onclick = submitAnswer;
@@ -335,7 +334,7 @@ const page = String.raw`<!doctype html>
         if(!active) return; e.preventDefault();
         const [x,y]=point(e);
         const pressure = e.pressure > 0 ? e.pressure : 0.5;
-        ctx.strokeStyle = drawingTool === "eraser" ? "white" : "#071127";
+        ctx.strokeStyle = drawingTool === "eraser" ? "white" : "#18100d";
         ctx.lineWidth = drawingTool === "eraser" ? 42*ratio : Math.max(4*ratio, 8*ratio*pressure);
         ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke();
         lastX=x; lastY=y;
@@ -367,17 +366,17 @@ const page = String.raw`<!doctype html>
     }
 
     function renderDisplay(){
-      app.innerHTML = '<div class="display">'+hero()+'<section class="grid">'+(players().length?players().map(p=>playerCard(p,false)).join(""):'<div class="centerbox"><div class="lead">参加者を待っています。</div></div>')+'</section></div>';
+      document.body.classList.add("display-page");
+      const visiblePlayers = players().slice(0, 6);
+      app.innerHTML = '<div class="display"><header class="display-title"><span>工大王</span><small>ANSWER BOARD</small></header><section class="display-grid">'+(visiblePlayers.length?visiblePlayers.map(p=>playerCard(p,false)).join(""):'<div class="centerbox"><div class="lead">参加者を待っています。</div></div>')+'</section></div>';
       renderDrawingImages();
     }
 
     function renderAdmin(){
       const submitted = players().filter(p=>p.submitted).length;
-      app.innerHTML = '<div class="admin-layout"><section class="card controls"><h2>司会コントロール</h2><div class="small">参加者</div><div class="count">'+players().length+' 人、回答済み '+submitted+' 人</div><textarea id="questionInput" class="field" maxlength="240" placeholder="問題文を入力">'+esc(quiz.question)+'</textarea><button id="setQuestion" class="btn wide cyan">新しい問題を出題</button><div class="buttonrow"><button id="toggleLock" class="btn">'+(quiz.locked?'回答受付を再開':'回答を締め切る')+'</button><button id="reveal" class="btn ok">一斉公開</button><button id="hide" class="btn secondary">回答を隠す</button><button id="resetAnswers" class="btn dark">回答のみ消去</button></div><div class="buttonrow"><button id="openDisplay" class="btn secondary">表示画面を開く</button><button id="resetGame" class="btn danger">全得点をリセット</button></div><div id="notice" class="notice"></div><div class="small">この司会画面には認証を設けていません。ローカルネットワーク内で使用してください。</div></section><section><div class="hero"><div class="eyebrow">QUESTION</div><div class="question">'+esc(quiz.question)+'</div><div class="status '+statusClass()+'">'+statusText()+'</div></div><div class="grid">'+(players().length?players().map(p=>playerCard(p,true)).join(""):'<div class="card">参加者を待っています。</div>')+'</div></section></div>';
+      app.innerHTML = '<div class="admin-layout"><section class="card controls"><h2>司会コントロール</h2><div class="small">参加者</div><div class="count">'+players().length+' 人、回答済み '+submitted+' 人</div><textarea id="questionInput" class="field" maxlength="240" placeholder="問題文を入力">'+esc(quiz.question)+'</textarea><button id="setQuestion" class="btn wide cyan">新しい問題を出題</button><div class="buttonrow"><button id="toggleLock" class="btn">'+(quiz.locked?'回答受付を再開':'回答を締め切る')+'</button><button id="resetAnswers" class="btn dark">回答のみ消去</button></div><div class="buttonrow"><button id="openDisplay" class="btn secondary">表示画面を開く</button><button id="resetGame" class="btn danger">全得点をリセット</button></div><div id="notice" class="notice"></div><div class="small">この司会画面には認証を設けていません。司会画面のURLは参加者に共有しないでください。</div></section><section><div class="hero"><div class="eyebrow">QUESTION</div><div class="question">'+esc(quiz.question)+'</div><div class="status '+statusClass()+'">'+statusText()+'</div></div><div class="grid">'+(players().length?players().map(p=>playerCard(p,true)).join(""):'<div class="card">参加者を待っています。</div>')+'</div></section></div>';
       document.getElementById("setQuestion").onclick = () => socket.emit("admin:setQuestion", {question:document.getElementById("questionInput").value}, showAdminResult);
       document.getElementById("toggleLock").onclick = () => socket.emit("admin:toggleLock");
-      document.getElementById("reveal").onclick = () => socket.emit("admin:reveal");
-      document.getElementById("hide").onclick = () => socket.emit("admin:hide");
       document.getElementById("resetAnswers").onclick = () => socket.emit("admin:resetAnswers");
       document.getElementById("openDisplay").onclick = () => window.open("/display", "quizDisplay");
       document.getElementById("resetGame").onclick = () => { if(confirm("全員の得点と回答をリセットしますか？")) socket.emit("admin:resetGame"); };
@@ -397,7 +396,7 @@ const page = String.raw`<!doctype html>
     socket.on("state", next => {
       const currentCanvas = document.getElementById("drawCanvas");
       const previousRound = quiz.round;
-      if (currentCanvas && joined && !quiz.locked && !quiz.reveal) draftImage = currentCanvas.toDataURL("image/jpeg",0.82);
+      if (currentCanvas && joined && !quiz.locked) draftImage = currentCanvas.toDataURL("image/jpeg",0.82);
       quiz = next;
       if (previousRound !== quiz.round) draftImage = "";
       if (route === "/" && currentPlayerId && quiz.players[currentPlayerId]) joined = true;
