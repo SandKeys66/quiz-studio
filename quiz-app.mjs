@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: false },
-  maxHttpBufferSize: 1e6
+  maxHttpBufferSize: 5e6
 });
 
 const state = {
@@ -88,8 +88,10 @@ io.on("connection", (socket) => {
     if (!player) return reply({ ok: false, message: "参加し直してください。" });
     if (state.locked || state.reveal) return reply({ ok: false, message: "現在は回答を変更できません。" });
 
-    const answer = cleanText(payload.answer, 160);
-    if (!answer) return reply({ ok: false, message: "回答を入力してください。" });
+    const answer = String(payload.answer ?? "");
+    const isDrawing = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(answer);
+    if (!isDrawing) return reply({ ok: false, message: "手書き解答を入力してください。" });
+    if (answer.length > 3500000) return reply({ ok: false, message: "画像が大きすぎます。全消去して書き直してください。" });
 
     player.answer = answer;
     player.submitted = true;
@@ -202,6 +204,7 @@ const page = String.raw`<!doctype html>
     .centerbox{width:min(680px,100%);margin:clamp(24px,8vh,90px) auto;background:linear-gradient(145deg,#173a77,#0b2048);padding:clamp(22px,5vw,46px);border-radius:28px;box-shadow:var(--shadow);border:1px solid #ffffff2c;text-align:center}.centerbox h1{font-size:clamp(34px,8vw,68px);margin:0 0 8px;color:var(--gold)}.lead{color:var(--muted);margin-bottom:28px}.field{width:100%;border:2px solid #ffffff25;background:#06142f;color:white;border-radius:15px;padding:16px 18px;outline:none;font-size:20px}.field:focus{border-color:var(--cyan);box-shadow:0 0 0 4px #4de2ff20}textarea.field{min-height:150px;resize:vertical;font-size:clamp(22px,5vw,36px);font-weight:800;margin-top:18px}.btn{border:0;border-radius:14px;padding:14px 20px;color:#071127;background:var(--gold);font-weight:900;cursor:pointer;min-height:52px}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.secondary{background:#ddecff}.btn.cyan{background:var(--cyan)}.btn.ok{background:var(--ok)}.btn.danger{background:var(--danger);color:white}.btn.dark{background:#081730;color:white;border:1px solid #ffffff33}.wide{width:100%;margin-top:14px;font-size:20px}.notice{margin-top:14px;min-height:24px;color:var(--cyan);font-weight:700}.navlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:25px}.navlinks a{color:#cddcff}
     .admin-layout{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:24px;align-items:start}.controls{position:sticky;top:86px}.controls h2{margin-top:0}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.buttonrow .btn{flex:1 1 130px}.admin-card-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.admin-card-actions .btn{padding:9px 7px;min-height:42px}.small{font-size:13px;color:var(--muted)}.count{font-size:24px;font-weight:900;color:var(--cyan)}
     .player-pane{width:min(820px,100%);margin:auto}.submitted{border:2px solid var(--ok);background:#0b4535;border-radius:18px;padding:20px;text-align:center;margin-top:18px}.display main{width:min(1700px,100%)}.display .card{padding:25px}.display .answer{min-height:140px}
+    .draw-wrap{margin-top:18px;background:#fff;border:3px solid #4de2ff;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px #0002}.draw-canvas{display:block;width:100%;height:clamp(300px,52vh,560px);background:#fff;touch-action:none;cursor:crosshair}.draw-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}.tool-active{outline:4px solid #4de2ff55}.answer img{display:block;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:10px}.display .answer img{max-height:320px}.handwriting-label{color:var(--muted);font-size:14px;margin-top:12px}
     @media(max-width:860px){.admin-layout{grid-template-columns:1fr}.controls{position:static}.topbar{padding:12px 16px}.admin-card-actions{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
@@ -217,6 +220,9 @@ const page = String.raw`<!doctype html>
     let joined = false;
     let currentPlayerId = localStorage.getItem("quizPlayerId") || "";
     let currentPlayerName = localStorage.getItem("quizPlayerName") || "";
+    let draftImage = "";
+    let drawingTool = "pen";
+    let strokeHistory = [];
 
     const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     const players = () => Object.values(quiz.players).sort((a,b) => b.score-a.score || a.joinedAt-b.joinedAt);
@@ -224,7 +230,7 @@ const page = String.raw`<!doctype html>
     const statusClass = () => quiz.reveal ? "revealed" : quiz.locked ? "locked" : "";
     const hero = () => '<section class="hero"><div class="eyebrow">QUESTION</div><div class="question">'+esc(quiz.question)+'</div><div class="status '+statusClass()+'">'+statusText()+'</div></section>';
     const answerFor = (p, adminView=false) => {
-      if (quiz.reveal || adminView) return p.answer ? esc(p.answer) : '<span class="wait">未回答</span>';
+      if (quiz.reveal || adminView) return p.answer ? '<img src="'+esc(p.answer)+'" alt="'+esc(p.name)+'の手書き解答">' : '<span class="wait">未回答</span>';
       return p.submitted ? '<span style="color:var(--gold)">回答済み</span>' : '<span class="wait">考え中...</span>';
     };
     const playerCard = (p, adminView=false) => '<article class="card"><div class="player-head"><div class="player-name"><span class="dot '+(p.online?'online':'')+'"></span>'+esc(p.name)+'</div><div class="score">'+p.score+' 点</div></div><div class="answer '+(p.correct===true?'correct':p.correct===false?'wrong':'')+'">'+answerFor(p,adminView)+'</div>'+(adminView?'<div class="admin-card-actions"><button class="btn ok" data-act="correct" data-id="'+esc(p.id)+'">正解</button><button class="btn danger" data-act="wrong" data-id="'+esc(p.id)+'">不正解</button><button class="btn dark" data-act="minus" data-id="'+esc(p.id)+'">-1点</button><button class="btn dark" data-act="remove" data-id="'+esc(p.id)+'">削除</button></div>':'')+'</article>';
@@ -241,8 +247,15 @@ const page = String.raw`<!doctype html>
       const me = quiz.players[currentPlayerId];
       if (!me) { joined=false; return renderPlayer(); }
       const disabled = quiz.locked || quiz.reveal;
-      app.innerHTML = '<div class="player-pane">'+hero()+'<section class="card"><div class="player-head"><div class="player-name">'+esc(me.name)+'</div><div class="score">'+me.score+' 点</div></div><textarea id="answer" class="field" maxlength="160" placeholder="ここに回答を入力" '+(disabled?'disabled':'')+'>'+esc(me.answer)+'</textarea><button id="submit" class="btn wide cyan" '+(disabled?'disabled':'')+'>'+(me.submitted?'回答を更新する':'回答を送信する')+'</button><div id="notice" class="notice">'+(disabled?'現在、回答はロックされています。':me.submitted?'回答を送信済みです。公開までお待ちください。':'')+'</div></section></div>';
-      if (!disabled) document.getElementById("submit").onclick = submitAnswer;
+      if (!draftImage && me.answer) draftImage = me.answer;
+      app.innerHTML = '<div class="player-pane">'+hero()+'<section class="card"><div class="player-head"><div class="player-name">'+esc(me.name)+'</div><div class="score">'+me.score+' 点</div></div><div class="handwriting-label">Apple Pencilまたは指で白い欄に解答を書いてください。</div><div class="draw-wrap"><canvas id="drawCanvas" class="draw-canvas" aria-label="手書き解答欄"></canvas></div><div class="draw-tools"><button id="penTool" class="btn dark '+(drawingTool==='pen'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>ペン</button><button id="eraserTool" class="btn dark '+(drawingTool==='eraser'?'tool-active':'')+'" '+(disabled?'disabled':'')+'>消しゴム</button><button id="clearCanvas" class="btn danger" '+(disabled?'disabled':'')+'>全消去</button></div><button id="submit" class="btn wide cyan" '+(disabled?'disabled':'')+'>'+(me.submitted?'解答を更新する':'解答を送信する')+'</button><div id="notice" class="notice">'+(disabled?'現在、解答はロックされています。':me.submitted?'解答を送信済みです。公開までお待ちください。':'')+'</div></section></div>';
+      setupDrawingCanvas(disabled);
+      if (!disabled) {
+        document.getElementById("submit").onclick = submitAnswer;
+        document.getElementById("penTool").onclick = () => setDrawingTool("pen");
+        document.getElementById("eraserTool").onclick = () => setDrawingTool("eraser");
+        document.getElementById("clearCanvas").onclick = clearDrawing;
+      }
     }
 
     function joinPlayer(){
@@ -259,11 +272,72 @@ const page = String.raw`<!doctype html>
       });
     }
 
+    function setDrawingTool(tool){
+      drawingTool = tool;
+      document.getElementById("penTool")?.classList.toggle("tool-active", tool === "pen");
+      document.getElementById("eraserTool")?.classList.toggle("tool-active", tool === "eraser");
+    }
+
+    function setupDrawingCanvas(disabled){
+      const canvas = document.getElementById("drawCanvas");
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(600, Math.round(rect.width * ratio));
+      canvas.height = Math.max(500, Math.round(rect.height * ratio));
+      const ctx = canvas.getContext("2d", { alpha:false });
+      ctx.fillStyle = "white";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (draftImage) {
+        const image = new Image();
+        image.onload = () => ctx.drawImage(image,0,0,canvas.width,canvas.height);
+        image.src = draftImage;
+      }
+      if (disabled) return;
+      let active = false;
+      let lastX = 0, lastY = 0;
+      const point = e => {
+        const r = canvas.getBoundingClientRect();
+        return [(e.clientX-r.left)*canvas.width/r.width, (e.clientY-r.top)*canvas.height/r.height];
+      };
+      canvas.addEventListener("pointerdown", e => {
+        e.preventDefault(); active=true; canvas.setPointerCapture(e.pointerId);
+        [lastX,lastY]=point(e);
+      });
+      canvas.addEventListener("pointermove", e => {
+        if(!active) return; e.preventDefault();
+        const [x,y]=point(e);
+        const pressure = e.pressure > 0 ? e.pressure : 0.5;
+        ctx.strokeStyle = drawingTool === "eraser" ? "white" : "#071127";
+        ctx.lineWidth = drawingTool === "eraser" ? 42*ratio : Math.max(4*ratio, 8*ratio*pressure);
+        ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke();
+        lastX=x; lastY=y;
+      });
+      const finish = e => { if(active){ active=false; draftImage=canvas.toDataURL("image/jpeg",0.82); } };
+      canvas.addEventListener("pointerup", finish);
+      canvas.addEventListener("pointercancel", finish);
+    }
+
+    function clearDrawing(){
+      const canvas=document.getElementById("drawCanvas");
+      if(!canvas) return;
+      const ctx=canvas.getContext("2d",{alpha:false});
+      ctx.fillStyle="white"; ctx.fillRect(0,0,canvas.width,canvas.height);
+      draftImage="";
+      const notice=document.getElementById("notice");
+      if(notice) notice.textContent="解答欄を消去しました。";
+    }
+
     function submitAnswer(){
-      const answer = document.getElementById("answer").value;
+      const canvas = document.getElementById("drawCanvas");
+      if (!canvas) return;
+      const answer = canvas.toDataURL("image/jpeg", 0.82);
+      draftImage = answer;
       socket.emit("player:answer", { answer }, result => {
         const notice = document.getElementById("notice");
-        notice.textContent = result?.ok ? "回答を送信しました。" : (result?.message || "送信できませんでした。");
+        notice.textContent = result?.ok ? "手書き解答を送信しました。" : (result?.message || "送信できませんでした。");
       });
     }
 
@@ -294,7 +368,11 @@ const page = String.raw`<!doctype html>
     function render(){ updateRound(); if(route==="/admin") renderAdmin(); else if(route==="/display") renderDisplay(); else renderPlayer(); }
 
     socket.on("state", next => {
+      const currentCanvas = document.getElementById("drawCanvas");
+      const previousRound = quiz.round;
+      if (currentCanvas && joined && !quiz.locked && !quiz.reveal) draftImage = currentCanvas.toDataURL("image/jpeg",0.82);
       quiz = next;
+      if (previousRound !== quiz.round) draftImage = "";
       if (route === "/" && currentPlayerId && quiz.players[currentPlayerId]) joined = true;
       render();
     });
