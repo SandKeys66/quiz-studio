@@ -63,17 +63,19 @@ io.on("connection", (socket) => {
     if (!name) return reply({ ok: false, message: "名前を入力してください。" });
 
     let playerId = cleanText(payload.playerId, 80);
-    if (!playerId || !state.players[playerId]) playerId = createPlayerId();
+    if (!/^p_[a-z0-9_]+$/i.test(playerId)) playerId = createPlayerId();
 
     const existing = state.players[playerId];
+    const restoredAnswer = String(payload.answer ?? "");
+    const validRestoredAnswer = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(restoredAnswer) && restoredAnswer.length <= 3500000;
     state.players[playerId] = {
       id: playerId,
       name,
-      answer: existing?.answer ?? "",
-      submitted: existing?.submitted ?? false,
+      answer: existing?.answer || (validRestoredAnswer ? restoredAnswer : ""),
+      submitted: existing?.submitted ?? validRestoredAnswer,
       correct: existing?.correct ?? null,
       online: true,
-      joinedAt: existing?.joinedAt ?? Date.now()
+      joinedAt: existing?.joinedAt ?? (Number(payload.joinedAt) || Date.now())
     };
 
     socketToPlayer.set(socket.id, playerId);
@@ -223,7 +225,9 @@ const page = String.raw`<!doctype html>
     let joined = false;
     let currentPlayerId = localStorage.getItem("quizPlayerId") || "";
     let currentPlayerName = localStorage.getItem("quizPlayerName") || "";
-    let draftImage = "";
+    let currentPlayerJoinedAt = Number(localStorage.getItem("quizPlayerJoinedAt")) || 0;
+    let savedAnswer = localStorage.getItem("quizPlayerAnswer") || "";
+    let draftImage = savedAnswer;
     let drawingTool = "pen";
     let strokeHistory = [];
 
@@ -285,13 +289,20 @@ const page = String.raw`<!doctype html>
 
     function joinPlayer(){
       const name = document.getElementById("name").value.trim();
-      socket.emit("player:join", { name, playerId: currentPlayerId }, result => {
+      socket.emit("player:join", {
+        name,
+        playerId: currentPlayerId,
+        joinedAt: currentPlayerJoinedAt,
+        answer: savedAnswer
+      }, result => {
         const notice = document.getElementById("notice");
         if (!result?.ok) { notice.textContent = result?.message || "参加できませんでした。"; return; }
         currentPlayerId = result.playerId;
         currentPlayerName = name;
         localStorage.setItem("quizPlayerId", currentPlayerId);
         localStorage.setItem("quizPlayerName", currentPlayerName);
+        if (!currentPlayerJoinedAt) currentPlayerJoinedAt = Date.now();
+        localStorage.setItem("quizPlayerJoinedAt", String(currentPlayerJoinedAt));
         joined = true;
         renderPlayer();
       });
@@ -388,6 +399,8 @@ const page = String.raw`<!doctype html>
       if (!canvas) return;
       const answer = canvas.toDataURL("image/jpeg", 0.82);
       draftImage = answer;
+      savedAnswer = answer;
+      try { localStorage.setItem("quizPlayerAnswer", answer); } catch {}
       socket.emit("player:answer", { answer }, result => {
         const notice = document.getElementById("notice");
         notice.textContent = result?.ok ? "手書き解答を送信しました。" : (result?.message || "送信できませんでした。");
@@ -421,17 +434,55 @@ const page = String.raw`<!doctype html>
     function showAdminResult(result){ const n=document.getElementById("notice"); if(n) n.textContent=result?.ok?"出題しました。":(result?.message||""); }
     function render(){ updateRound(); if(route==="/admin") renderAdmin(); else if(route==="/display") renderDisplay(); else renderPlayer(); }
 
+    if (route === "/display") {
+      document.addEventListener("keydown", event => {
+        if (event.key.toLowerCase() !== "f" || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.target.matches?.("input, textarea, select, button")) return;
+        event.preventDefault();
+        if (document.fullscreenElement) document.exitFullscreen?.();
+        else document.documentElement.requestFullscreen?.();
+      });
+    }
+
+    let resumeInFlight = false;
+    function resumePlayerConnection(){
+      if (route !== "/" || !currentPlayerId || !currentPlayerName || resumeInFlight) return;
+      resumeInFlight = true;
+      socket.emit("player:join", {
+        name: currentPlayerName,
+        playerId: currentPlayerId,
+        joinedAt: currentPlayerJoinedAt,
+        answer: savedAnswer
+      }, result => {
+        resumeInFlight = false;
+        if (!result?.ok) return;
+        currentPlayerId = result.playerId;
+        localStorage.setItem("quizPlayerId", currentPlayerId);
+        joined = true;
+      });
+    }
+    socket.on("connect", resumePlayerConnection);
+
     socket.on("state", next => {
       const currentCanvas = document.getElementById("drawCanvas");
       const previousRound = quiz.round;
       if (currentCanvas && joined && !quiz.locked) draftImage = currentCanvas.toDataURL("image/jpeg",0.82);
       quiz = next;
-      if (previousRound !== quiz.round) draftImage = "";
+      if (previousRound !== quiz.round) {
+        draftImage = "";
+        savedAnswer = "";
+        localStorage.removeItem("quizPlayerAnswer");
+      }
       if (route === "/" && currentPlayerId && quiz.players[currentPlayerId]) joined = true;
       render();
     });
     socket.on("player:removed", () => {
-      localStorage.removeItem("quizPlayerId"); currentPlayerId=""; joined=false; render();
+      localStorage.removeItem("quizPlayerId");
+      localStorage.removeItem("quizPlayerName");
+      localStorage.removeItem("quizPlayerJoinedAt");
+      localStorage.removeItem("quizPlayerAnswer");
+      currentPlayerId=""; currentPlayerName=""; currentPlayerJoinedAt=0;
+      savedAnswer=""; draftImage=""; joined=false; render();
     });
   </script>
 </body>
